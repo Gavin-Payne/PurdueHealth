@@ -7,18 +7,22 @@ import pymongo
 from bs4 import BeautifulSoup
 import time
 from datetime import datetime, timedelta
-
+from dotenv import load_dotenv
+import os
 from pymongo import MongoClient
 import certifi
 
-# MongoDB Atlas connection string
-MONGODB_URI = "mongodb+srv://admin:DX3hHMVy8yxkbnMf@purduemenus.ltcxv.mongodb.net/?retryWrites=true&w=majority"
+# Set up MongoDB connection
+MONGODB_URI = os.getenv('MONGO_URI')
+DATABASE_NAME = os.getenv('DATABASE_NAME')
+MENU_COLLECTION_NAME = os.getenv('MENU_COLLECTION_NAME')
+NUT_COLLECTION_NAME = os.getenv('NUT_COLLECTION_NAME')
 
 # Connect to MongoDB with SSL certificate verification
 client = MongoClient(MONGODB_URI, tlsCAFile=certifi.where())
-db = client.purdue_dining
-menu_collection = db.menus
-nutrition_collection = db.nutrition
+db = client[DATABASE_NAME]
+menu_collection = db[MENU_COLLECTION_NAME]
+nutrition_collection = db[NUT_COLLECTION_NAME]
 
 # Create indexes for efficient querying
 menu_collection.create_index([
