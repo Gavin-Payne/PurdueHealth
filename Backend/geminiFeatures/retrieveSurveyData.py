@@ -4,10 +4,10 @@ import certifi
 
 # Load environment variables
 MONGODB_URI = os.getenv('MONGO_URI')
-DATABASE_NAME = 'test'  # Access the 'test' database
-COLLECTION_NAME = 'survey'  # Access the 'survey' collection
+DATABASE_NAME = 'test'
+COLLECTION_NAME = 'survey'
 
-def retrieve_data_from_mongodb():
+def retrieve_data_from_mongodb(userID):
     # Set up MongoDB connection
     client = MongoClient(MONGODB_URI, tlsCAFile=certifi.where())
     db = client[DATABASE_NAME]
@@ -15,7 +15,7 @@ def retrieve_data_from_mongodb():
 
     # Get workout information for the user
     projection = {
-        "userId": USER_ID,
+        "userID": 1,
         "answers.workout": 1,
         'answers.height': 1,
         'answers.weight': 1,
@@ -26,7 +26,7 @@ def retrieve_data_from_mongodb():
     }
 
     # Retrieve data from the collection
-    data = collection.find({}, projection)
+    data = collection.find({"userId": userID}, projection)
 
     for document in data:
         workout = document.get("answers", {}).get("workout")
@@ -44,4 +44,4 @@ def retrieve_data_from_mongodb():
 
 # Usage
 if __name__ == '__main__':
-    retrieve_data_from_mongodb()
+    retrieve_data_from_mongodb(userID)

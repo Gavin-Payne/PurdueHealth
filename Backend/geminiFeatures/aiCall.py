@@ -23,7 +23,7 @@ def getAIResponse(inputPrompt):
 
 if __name__ == "__main__":
     # Call the database
-    data = retrieveSurveyData.retrieve_data_from_mongodb()
+    data = retrieveSurveyData.retrieve_data_from_mongodb(userID)
 
     # Get data
     contents = []
