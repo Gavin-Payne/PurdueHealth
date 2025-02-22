@@ -26,6 +26,7 @@ app.get('/health', (req, res) => {
 // Routes (only import after confirming files exist)
 const authRoutes = require('./routes/authentication');
 const surveyRoutes = require('./routes/survey');
+const userRoutes = require('./routes/userdata');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
