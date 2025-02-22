@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './Profile.css';
 
 const Profile = ({ userId, token }) => {
@@ -8,43 +8,69 @@ const Profile = ({ userId, token }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    fetchSurveyData();
-  }, [userId, token]); // Added token dependency
-
-  const fetchSurveyData = async () => {
+  // Memoize the regenerateWorkoutPlan function
+  const regenerateWorkoutPlan = useCallback(async () => {
     try {
-      setLoading(true);
-      setError(null);
-      
-      console.log('Fetching survey data for user:', userId);
-      
-      const response = await fetch(`http://localhost:5000/api/survey/data/${userId}`, {
+      const response = await fetch(`http://localhost:5000/api/workout-plan/${userId}/regenerate`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
 
+      if (!response.ok) {
+        throw new Error('Failed to regenerate workout plan');
+      }
+    } catch (error) {
+      console.error('Error regenerating workout plan:', error);
+      alert('Failed to update workout plan');
+    }
+  }, [userId, token]);
+
+  // Memoize the fetchSurveyData function with all dependencies
+  const fetchSurveyData = useCallback(async () => {
+    if (!token || !userId) {
+      console.log('Missing auth data:', { hasToken: !!token, userId });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(`http://localhost:5000/api/survey/data/${userId}`, {
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'X-User-Email': userId
+        }
+      });
+
       const data = await response.json();
-      console.log('Survey response:', data);
 
       if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch survey data');
       }
 
       if (!data.answers) {
-        throw new Error('No survey answers found');
+        throw new Error('Invalid survey data format');
       }
 
       setSurveyData(data.answers);
     } catch (error) {
-      console.error('Error fetching survey data:', error);
+      console.error('Survey fetch error:', error);
       setError(error.message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, token]);
+
+  // Update useEffect with proper dependencies
+  useEffect(() => {
+    fetchSurveyData();
+  }, [fetchSurveyData, userId, token]);
 
   const handleEdit = (field) => {
     setIsEditing(field);
@@ -58,9 +84,11 @@ const Profile = ({ userId, token }) => {
     try {
       const response = await fetch(`http://localhost:5000/api/survey/${userId}`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-User-Email': userId
         },
         body: JSON.stringify({
           field,
@@ -88,25 +116,6 @@ const Profile = ({ userId, token }) => {
     } catch (error) {
       console.error('Error updating survey data:', error);
       alert(`Failed to update ${field}: ${error.message}`);
-    }
-  };
-
-  const regenerateWorkoutPlan = async () => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/workout-plan/${userId}/regenerate`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to regenerate workout plan');
-      }
-    } catch (error) {
-      console.error('Error regenerating workout plan:', error);
-      alert('Failed to update workout plan');
     }
   };
 

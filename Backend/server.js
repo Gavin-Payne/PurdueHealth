@@ -1,6 +1,6 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
+const { getMongoClient } = require('./utils/db');
 require('dotenv').config();
 
 const app = express();
@@ -11,8 +11,12 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({
   origin: 'http://localhost:3000',
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization',
+    'X-User-Email'
+  ]
 }));
 
 app.use(express.json());
@@ -30,18 +34,15 @@ app.get('/health', (req, res) => {
 });
 
 // Import all routes
-const authRoutes = require('./routes/authentication');
-const userRoutes = require('./routes/userdata');
-const googleAuthRoutes = require('./routes/googleAuth');
 const surveyRoutes = require('./routes/survey');
 const workoutPlanRoutes = require('./routes/workoutPlan');
 
 // Register routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/google', googleAuthRoutes);
 app.use('/api/survey', surveyRoutes); // Make sure this is registered
-app.use('/api', workoutPlanRoutes);
+app.use('/api/workout-plan', workoutPlanRoutes);
+
+// Register routes with corrected path
+app.use('/api/workout-plan', workoutPlanRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {
@@ -52,21 +53,47 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Error handling for Auth0
+app.use((err, req, res, next) => {
+  if (err.name === 'UnauthorizedError') {
+    return res.status(401).json({ message: 'Invalid token' });
+  }
+  next(err);
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log('Connected to MongoDB');
+// Initialize MongoDB connection before starting server
+const initializeServer = async () => {
+  try {
+    await getMongoClient(); // Establish initial connection
+    console.log('MongoDB connection initialized');
+    
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
-  })
-  .catch((error) => {
-    console.error('MongoDB connection error:', error);
-  });
+  } catch (error) {
+    console.error('Failed to initialize server:', error);
+    process.exit(1);
+  }
+};
+
+initializeServer();
+
+const { closeConnection } = require('./utils/db');
+
+process.on('SIGINT', async () => {
+  try {
+    await closeConnection();
+    console.log('Gracefully shutting down');
+    process.exit(0);
+  } catch (error) {
+    console.error('Error during shutdown:', error);
+    process.exit(1);
+  }
+});
 
 module.exports = app;

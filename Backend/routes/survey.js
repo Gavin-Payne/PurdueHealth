@@ -1,10 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { MongoClient } = require('mongodb');
-require('dotenv').config();
-const { authenticateToken } = require('../middleware/auth');
+const { checkJwt, extractUserFromToken, requireEmail, handlePreflightRequest } = require('../middleware/auth');
+const { getCollection } = require('../utils/db');
 
-// Singleton MongoDB client
 let mongoClient = null;
 
 const getMongoClient = async () => {
@@ -15,130 +14,121 @@ const getMongoClient = async () => {
   return mongoClient;
 };
 
-// Check if user has completed survey
-router.get('/status/:userId', authenticateToken, async (req, res) => {
-  const client = new MongoClient(process.env.MONGO_URI);
-  
+router.use(handlePreflightRequest);
+
+// Check survey status
+router.get('/status/:userId', checkJwt, requireEmail, async (req, res) => {
   try {
-    await client.connect();
-    const db = client.db('test');
-    const collection = db.collection('surveys');
+    if (req.user.email !== req.params.userId) {
+      console.error('Email mismatch:', {
+        tokenEmail: req.user.email,
+        requestedId: req.params.userId
+      });
+      return res.status(403).json({
+        message: 'Unauthorized access',
+        details: 'Email mismatch'
+      });
+    }
 
-    const userId = req.params.userId;
-    console.log('Checking survey status for:', userId);
+    const collection = await getCollection('surveys');
+    if (!collection) {
+      throw new Error('Failed to get surveys collection');
+    }
 
-    const survey = await collection.findOne({ userId: userId });
-    console.log('Found survey:', survey);
+    const survey = await collection.findOne({ userId: req.params.userId });
+    console.log('Survey lookup result:', { 
+      userId: req.params.userId, 
+      found: !!survey 
+    });
 
     res.json({ hasTakenSurvey: !!survey });
   } catch (error) {
-    console.error('Error checking survey status:', error);
-    res.status(500).json({ error: error.message });
-  } finally {
-    await client.close();
+    console.error('Survey status check error:', error);
+    res.status(500).json({ 
+      message: 'Failed to check survey status',
+      error: error.message 
+    });
   }
 });
 
 // Get survey data
-router.get('/data/:userId', authenticateToken, async (req, res) => {
-  let client;
+router.get('/data/:userId', checkJwt, requireEmail, async (req, res) => {
   try {
-    // Get MongoDB client
-    client = await getMongoClient();
-    const db = client.db('test');
-    const collection = db.collection('surveys');
-
-    const userId = req.params.userId;
-    console.log('Fetching survey data for:', userId);
-
-    // Verify user authorization
-    const userEmail = req.user.email;
-    console.log('User email from token:', userEmail);
-    console.log('Requested userId:', userId);
-
-    if (userEmail !== userId) {
-      console.log('Authorization failed: email mismatch');
+    // User info is now available in req.user
+    if (req.user.email !== req.params.userId) {
+      console.error('Email mismatch:', {
+        tokenEmail: req.user.email,
+        requestedId: req.params.userId
+      });
       return res.status(403).json({ message: 'Unauthorized access' });
     }
 
-    // Find survey with more specific query
-    const survey = await collection.findOne({ userId: userId });
-    console.log('Found survey:', survey);
-
+    const collection = await getCollection('surveys');
+    const survey = await collection.findOne({ userId: req.params.userId });
+    
     if (!survey) {
-      return res.status(404).json({ 
-        message: 'Survey not found',
-        userId: userId
-      });
+      console.log('No survey found for user:', req.params.userId);
+      return res.status(404).json({ message: 'Survey not found' });
     }
 
-    // Send response with survey data
+    console.log('Found survey for user:', req.params.userId);
     res.json({
-      answers: survey.answers || {},
+      answers: survey.answers,
       updatedAt: survey.updatedAt
     });
 
   } catch (error) {
-    console.error('Detailed error:', error);
+    console.error('Survey data fetch error:', error);
     res.status(500).json({ 
       message: 'Failed to fetch survey data',
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: error.message 
     });
   }
 });
 
 // Submit survey
-router.post('/', authenticateToken, async (req, res) => {
-  let client;
+router.post('/', checkJwt, requireEmail, async (req, res) => {
   try {
-    client = await getMongoClient();
-    const db = client.db('test');
-    const collection = db.collection('surveys');
-
-    const { userId, answers } = req.body;
-    console.log('Received survey submission:', { 
-      userId, 
-      answers,
-      authenticatedUser: req.user 
-    });
-
-    if (!userId || !answers) {
-      return res.status(400).json({ message: 'Missing userId or answers' });
+    const userEmail = req.user?.email;
+    
+    if (!userEmail) {
+      console.error('No email found in token');
+      return res.status(401).json({ 
+        message: 'Cannot read properties of undefined (reading \'email\')',
+        details: 'No email found in authentication token'
+      });
     }
 
-    // Verify that the authenticated user matches the survey submission
-    if (req.user.email !== userId && req.user.id !== userId) {
-      return res.status(403).json({ message: 'Unauthorized survey submission' });
+    if (userEmail !== req.body.userId) {
+      console.error('Email mismatch:', {
+        tokenEmail: userEmail,
+        bodyUserId: req.body.userId
+      });
+      return res.status(403).json({ message: 'Unauthorized access' });
     }
 
-    const result = await collection.updateOne(
-      { userId: userId },
-      { 
-        $set: { 
-          userId: userId,
-          answers: answers,
-          updatedAt: new Date(),
-          updatedBy: req.user.id
-        }
-      },
-      { upsert: true }
-    );
-
-    console.log('Survey saved:', result);
-    res.json({ 
-      success: true, 
-      message: 'Survey saved successfully',
-      surveyId: result.upsertedId || result.modifiedCount
+    const collection = await getCollection('surveys');
+    const result = await collection.insertOne({
+      userId: req.body.userId,
+      answers: req.body.answers,
+      createdAt: new Date(),
+      updatedAt: new Date()
     });
+
+    console.log('Survey saved:', result.insertedId);
+    res.status(201).json({ 
+      message: 'Survey submitted successfully',
+      surveyId: result.insertedId 
+    });
+
   } catch (error) {
-    console.error('Error saving survey:', error);
+    console.error('Survey submission error:', error);
     res.status(500).json({ message: error.message });
   }
 });
 
 // Update survey field
-router.patch('/:userId', authenticateToken, async (req, res) => {
+router.patch('/:userId', checkJwt, requireEmail, async (req, res) => {
   let client;
   try {
     client = await getMongoClient();

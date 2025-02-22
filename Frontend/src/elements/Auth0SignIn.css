@@ -1,0 +1,36 @@
+.auth0-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+
+.auth0-button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.auth0-button.login {
+  background-color: #635BFF;
+  color: white;
+}
+
+.auth0-button.logout {
+  background-color: #DC3545;
+  color: white;
+}
+
+.auth0-profile {
+  text-align: center;
+}
+
+.auth0-profile img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  margin-bottom: 10px;
+}

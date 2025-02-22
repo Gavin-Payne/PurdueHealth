@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './Survey.css';
 
 const Survey = ({ userId, token, onComplete }) => {
@@ -21,9 +21,32 @@ const Survey = ({ userId, token, onComplete }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  // Memoize checkSurveyStatus
+  const checkSurveyStatus = useCallback(async (userId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/survey/status/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to check survey status');
+      }
+      
+      const data = await response.json();
+      setNeedsSurvey(!data.hasTakenSurvey);
+    } catch (error) {
+      console.error('Error checking survey status:', error);
+      setNeedsSurvey(true);
+    }
+  }, [token]); // Add token as dependency
+
   useEffect(() => {
-    checkSurveyStatus(userId);
-  }, [userId]);
+    if (userId && token) {
+      checkSurveyStatus(userId);
+    }
+  }, [userId, token, checkSurveyStatus]);
 
   const questions = [
     {
@@ -133,69 +156,38 @@ const Survey = ({ userId, token, onComplete }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setIsSubmitting(true);
-    setError('');
-
+    
     try {
-      console.log('Token being sent:', token);
-      
+      if (!token || !userId) {
+        throw new Error('Missing authentication data');
+      }
+  
       const response = await fetch('http://localhost:5000/api/survey', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-User-Email': userId
         },
         body: JSON.stringify({
           userId: userId,
-          answers: {
-            ...answers,
-            workout: answers.workout || 'beginner',
-            liftingFrequency: answers.liftingFrequency || '3',
-            cardioFrequency: answers.cardioFrequency || '2',
-            workoutDuration: answers.workoutDuration || '30'
-          }
+          answers: answers
         })
       });
-
+  
       const data = await response.json();
       console.log('Survey submission response:', data);
-
+  
       if (!response.ok) {
-        if (data.message === 'Invalid token') {
-          // Handle token expiration
-          console.error('Token validation failed:', data);
-          throw new Error('Your session has expired. Please log in again.');
-        }
         throw new Error(data.message || 'Failed to submit survey');
       }
-
-      if (onComplete) {
-        await onComplete();
-      }
+  
+      onComplete();
     } catch (error) {
-      console.error('Error submitting survey:', error);
+      console.error('Survey submission error:', error);
       setError(error.message);
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const checkSurveyStatus = async (userId) => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/survey/status/${userId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to check survey status');
-      }
-      
-      const data = await response.json();
-      setNeedsSurvey(!data.hasTakenSurvey);
-    } catch (error) {
-      console.error('Error checking survey status:', error);
-      setNeedsSurvey(true);
     }
   };
 
@@ -313,6 +305,20 @@ const Survey = ({ userId, token, onComplete }) => {
       </div>
     );
   };
+
+  // Add loading and error displays
+  if (isSubmitting) {
+    return <div className="loading">Submitting survey...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="error">
+        <p>Error: {error}</p>
+        <button onClick={() => setError('')}>Try Again</button>
+      </div>
+    );
+  }
 
   return (
     <div className="survey-container">
