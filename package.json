@@ -29,7 +29,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "concurrently \"npm run backend\" \"npm run frontend\"",
     "backend": "cd Backend && node server.js",
-    "frontend": "npm start --prefix ./Frontend"
+    "frontend": "npm start --prefix ./frontend"
   },
   "eslintConfig": {
     "extends": [
