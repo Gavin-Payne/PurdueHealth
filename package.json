@@ -26,7 +26,7 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "start": "concurrently \"npm install --production=false && npm run build && npm ci\" \"npm run backend\" \"npm run frontend\"",
     "backend": "cd Backend && node server.js",
     "frontend": "npm start --prefix ./Frontend"
   },
