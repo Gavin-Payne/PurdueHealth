@@ -5,9 +5,7 @@ const path = require('path');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
-
-// Middleware
+Middleware
 app.use(express.json());
 app.use(cors());
 
@@ -25,8 +23,8 @@ app.get('/health', (req, res) => {
 
 // Routes (only import after confirming files exist)
 const authRoutes = require('./routes/authentication');
+const googleAuthRoutes = require('./routes/googleAuth'); // Ensure this line is added
 const surveyRoutes = require('./routes/survey');
-const userRoutes = require('./routes/userdata');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
