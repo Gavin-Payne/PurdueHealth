@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { GoogleOAuthProvider } from '@react-oauth/google';
-import SignIn from './googleSignIn';
-import Survey from './Survey';
-import './App.css';
-import { jwtDecode } from 'jwt-decode';
-import Profile from './Profile';
-import Settings from './Settings';
+import { useAuth0, Auth0Provider } from '@auth0/auth0-react';
+import SignIn from './SignIn'; // Import the SignIn component
+import Survey from './Survey'; // Import the Survey component
+import Profile from './Profile'; // Import the Profile component
+import Settings from './Settings'; // Import the Settings component
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -16,9 +14,42 @@ function App() {
   const [activeView, setActiveView] = useState('home');
   const [isDarkMode, setIsDarkMode] = useState(false);
 
+  const { isAuthenticated, loginWithRedirect, logout, user, getAccessTokenSilently } = useAuth0();
+
   useEffect(() => {
-    if (token && userInfo?.id) {
-      checkSurveyStatus(userInfo.id);
+    if (isAuthenticated) {
+      const fetchToken = async () => {
+        try {
+          const token = await getAccessTokenSilently();
+          setToken(token);
+          setUserInfo(user);
+          setIsLoggedIn(true);
+
+          console.log('Sending user data to backend:', { auth0Id: user.sub, name: user.name, email: user.email });
+
+          // Send user data to backend
+          const response = await fetch('http://localhost:5000/api/user', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ auth0Id: user.sub, name: user.name, email: user.email })
+          });
+
+          const data = await response.json();
+          console.log('Response from backend:', data);
+        } catch (error) {
+          console.error('Error sending user data to backend:', error);
+        }
+      };
+      fetchToken();
+    }
+  }, [isAuthenticated, getAccessTokenSilently, user]);
+
+  useEffect(() => {
+    if (token && userInfo?.sub) {
+      checkSurveyStatus(userInfo.sub);
     }
   }, [token, userInfo]);
 
@@ -33,76 +64,6 @@ function App() {
     }
   }, []);
 
-  const handleLoginSuccess = async (response) => {
-    console.log('Full login response:', response);
-    
-    if (!response || !response.token) {
-      console.error('Invalid response from login');
-      return;
-    }
-  
-    try {
-      const user = {
-        ...response.user,
-        id: response.user.email
-      };
-
-      // Set token first
-      setToken(response.token);
-      // Then set other states
-      setIsLoggedIn(true);
-      setUserInfo(user);
-
-      console.log('Token set to:', response.token);
-      console.log('Setting user info:', user);
-      
-    } catch (error) {
-      console.error('Error in handleLoginSuccess:', error);
-      handleLoginFailure(error);
-    }
-  };
-
-  const handleLoginFailure = (error) => {
-    console.log('Login Failed:', error);
-  };
-
-  const checkSurveyStatus = async (userId) => {
-    try {
-      console.log('Checking survey status with:', {
-        userId,
-        token,
-        hasToken: !!token,
-        hasUserId: !!userId
-      });
-
-      if (!token || !userId) {
-        console.error('Missing token or userId for survey status check');
-        return;
-      }
-
-      const response = await fetch(`http://localhost:5000/api/survey/status/${userId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Survey status check failed: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('Survey status response:', data);
-      
-      setNeedsSurvey(!data.hasTakenSurvey);
-      
-    } catch (error) {
-      console.error('Error checking survey status:', error);
-      // Default to showing survey if status check fails
-      setNeedsSurvey(true);
-    }
-  };
-
   const handleSurveyComplete = () => {
     setNeedsSurvey(false);
   };
@@ -116,15 +77,12 @@ function App() {
   };
 
   const handleLogout = () => {
-    // Clear all states
+    logout({ returnTo: window.location.origin });
     setIsLoggedIn(false);
     setUserInfo(null);
     setToken(null);
     setMenuOpen(false);
-    
-    // Clear local storage
     localStorage.removeItem('token');
-    
     console.log('User logged out');
   };
 
@@ -133,23 +91,42 @@ function App() {
     localStorage.setItem('darkMode', !isDarkMode);
   };
 
+  // Placeholder for checkSurveyStatus function
+  const checkSurveyStatus = (userId) => {
+    // Implement the function to check survey status
+    console.log(`Checking survey status for user: ${userId}`);
+  };
+
+  const handleSignInSuccess = (token) => {
+    setToken(token);
+    console.log('Sign-in successful, token set:', token);
+  };
+
+  const handleSignInError = (error) => {
+    console.error('Sign-in error:', error);
+  };
+
   return (
-    <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}>
+    <Auth0Provider
+      domain={process.env.REACT_APP_AUTH0_DOMAIN}
+      clientId={process.env.REACT_APP_AUTH0_CLIENT_ID}
+      redirectUri={window.location.origin}
+    >
       <div className="app-container">
         {!isLoggedIn ? (
           <div className="login-container">
             <h2>Welcome! Please sign in</h2>
-            <SignIn 
+            <SignIn
               setToken={setToken}
-              onSuccess={handleLoginSuccess}
-              onError={handleLoginFailure}
+              onSuccess={handleSignInSuccess}
+              onError={handleSignInError}
             />
           </div>
         ) : needsSurvey ? (
-          <Survey 
-            userId={userInfo?.id || userInfo?.sub}  // Try both possible locations
+          <Survey
+            userId={userInfo?.sub}
             token={token}
-            onComplete={handleSurveyComplete} 
+            onComplete={handleSurveyComplete}
           />
         ) : (
           <div className="app-main">
@@ -173,7 +150,7 @@ function App() {
             )}
             <main className="main-content">
               {activeView === 'profile' ? (
-                <Profile userId={userInfo.id} token={token} />
+                <Profile userId={userInfo.sub} token={token} />
               ) : activeView === 'settings' ? (
                 <Settings isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
               ) : (
@@ -186,9 +163,8 @@ function App() {
           </div>
         )}
       </div>
-    </GoogleOAuthProvider>
+    </Auth0Provider>
   );
 }
 
 export default App;
-

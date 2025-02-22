@@ -1,7 +1,7 @@
+require('dotenv').config(); 
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -9,6 +9,10 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(express.json());
 app.use(cors());
+
+// Log to verify console output
+console.log('Server is starting...');
+console.log('Mongo URI:', process.env.MONGO_URI);
 
 // Set headers to allow cross-origin communication
 app.use((req, res, next) => {
@@ -22,15 +26,11 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-// Routes (only import after confirming files exist)
-const authRoutes = require('./routes/authentication');
-const userRoutes = require('./routes/userdata');
-const googleAuthRoutes = require('./routes/googleAuth');
+// Routes
+const userRoutes = require('./routes/user');
 const surveyRoutes = require('./routes/survey');
 
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/google', googleAuthRoutes);
+app.use('/api/user', userRoutes);
 app.use('/api/survey', surveyRoutes);
 
 // MongoDB Connection
