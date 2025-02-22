@@ -1,14 +1,33 @@
 const express = require('express');
 const router = express.Router();
+const { MongoClient } = require('mongodb');
+const { authenticateToken } = require('../middleware/auth');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { retrieveDataFromMongodb } = require('../geminiFeatures/retrieveSurveyData');
 require('dotenv').config();
 
-router.get('/workout-plan/:userId', async (req, res) => {
-  console.log('Received request for userId:', req.params.userId);
-  
+router.get('/workout-plan/:userId', authenticateToken, async (req, res) => {
+  let client;
   try {
+    client = await new MongoClient(process.env.MONGO_URI).connect();
+    const db = client.db('test');
+    const collection = db.collection('workoutPlans');
     const userId = req.params.userId;
+
+    // Verify user authorization
+    if (req.user.email !== userId) {
+      return res.status(403).json({ message: 'Unauthorized access' });
+    }
+
+    // First try to get existing plan
+    const existingPlan = await collection.findOne({ userId });
+    
+    if (existingPlan) {
+      console.log('Found existing workout plan for user:', userId);
+      return res.json(existingPlan.plan);
+    }
+
+    // If no plan exists, generate new one
     const surveyData = await retrieveDataFromMongodb(userId);
     
     if (!surveyData) {
@@ -58,6 +77,20 @@ router.get('/workout-plan/:userId', async (req, res) => {
         throw new Error('Invalid workout plan structure');
       }
 
+      // Store the generated plan
+      await collection.updateOne(
+        { userId },
+        { 
+          $set: { 
+            userId,
+            plan: workoutPlan,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        },
+        { upsert: true }
+      );
+
       return res.json(workoutPlan);
     } catch (parseError) {
       console.error('Parse error:', parseError);
@@ -74,7 +107,15 @@ router.get('/workout-plan/:userId', async (req, res) => {
       error: error.message || 'Internal server error',
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
+  } finally {
+    if (client) await client.close();
   }
+});
+
+// Add endpoint to force regeneration
+router.post('/workout-plan/:userId/regenerate', authenticateToken, async (req, res) => {
+  // Similar to GET but forces new plan generation
+  // Copy the plan generation logic here but without checking for existing plan
 });
 
 module.exports = router;

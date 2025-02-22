@@ -1,14 +1,37 @@
 .profile-container {
-  padding: 2rem;
+  padding: 20px;
   max-width: 800px;
   margin: 0 auto;
 }
 
-.profile-field {
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  border: 1px solid #ddd;
+.loading,
+.error,
+.no-data {
+  text-align: center;
+  padding: 20px;
+  margin: 20px 0;
   border-radius: 4px;
+}
+
+.loading {
+  background-color: #f0f0f0;
+}
+
+.error {
+  background-color: #fee;
+  color: #d00;
+  border: 1px solid #faa;
+}
+
+.no-data {
+  background-color: #fff8e8;
+  border: 1px solid #ffe0b2;
+}
+
+.profile-field {
+  margin: 15px 0;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
 }
 
 .profile-field label {
@@ -19,20 +42,47 @@
 
 .edit-controls {
   display: flex;
-  gap: 1rem;
+  gap: 10px;
   align-items: center;
+  margin-top: 5px;
 }
 
 .edit-controls input {
-  padding: 0.5rem;
+  padding: 5px;
   border: 1px solid #ccc;
   border-radius: 4px;
 }
 
+.edit-controls button {
+  padding: 5px 10px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+}
+
+.edit-controls button:first-of-type {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.edit-controls button:last-of-type {
+  background-color: #f44336;
+  color: white;
+}
+
 .display-value {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 10px;
+}
+
+.display-value button {
+  padding: 3px 8px;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 button {
