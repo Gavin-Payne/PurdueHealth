@@ -23,7 +23,7 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-    res.redirect('/api/auth');
+    res.redirect('Backend/routes/authentication.js');
 });
 
 // Routes (only import after confirming files exist)
