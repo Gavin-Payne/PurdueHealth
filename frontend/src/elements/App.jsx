@@ -6,7 +6,7 @@ import './App.css';
 import { jwtDecode } from 'jwt-decode';
 import Profile from './Profile';
 import Settings from './Settings';
-import WorkoutPlan from './WorkoutPlan';
+import WorkoutPlan from './WorkoutPlan.jsx';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
