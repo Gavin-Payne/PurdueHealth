@@ -1,0 +1,61 @@
+.profile-container {
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.profile-field {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.profile-field label {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.edit-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.edit-controls input {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.display-value {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+button {
+  padding: 0.5rem 1rem;
+  background-color: var(--gold);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: var(--black);
+}
+
+.dietary-restrictions ul {
+  list-style: none;
+  padding: 0;
+}
+
+.dietary-restrictions li {
+  padding: 0.5rem;
+  background-color: #f5f5f5;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
+}
