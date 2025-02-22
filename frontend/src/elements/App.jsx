@@ -3,10 +3,9 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import SignIn from './googleSignIn';
 import Survey from './Survey';
 import './App.css';
-import { jwtDecode } from 'jwt-decode';
 import Profile from './Profile';
 import Settings from './Settings';
-import WorkoutPlan from 'frontend/src/elements/WorkoutPlan.jsx';
+import WorkoutPlan from './WorkoutPlan';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
