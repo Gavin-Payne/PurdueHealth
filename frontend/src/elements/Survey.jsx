@@ -18,6 +18,8 @@ const Survey = ({ userId, token, onComplete }) => {
 
   const [showWorkoutQuestions, setShowWorkoutQuestions] = useState(false);
   const [needsSurvey, setNeedsSurvey] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     checkSurveyStatus(userId);
@@ -128,51 +130,52 @@ const Survey = ({ userId, token, onComplete }) => {
     }));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setError('');
+
     try {
-      if (!userId) {
-        console.error('No userId provided');
-        return;
-      }
-
-      // Log the payload for debugging
-      const payload = {
-        userId: userId,
-        answers: {
-          dietaryRestrictions: answers.dietaryRestrictions,
-          mealSwipes: answers.mealSwipes,
-          distanceImportance: answers.distanceImportance,
-          height: answers.height,
-          weight: answers.weight,
-          workout: answers.workout,
-          liftingFrequency: answers.liftingFrequency,
-          cardioFrequency: answers.cardioFrequency,
-          workoutDuration: answers.workoutDuration,
-          wantsPlan: answers.wantsPlan
-        }
-      };
-
-      console.log('Submitting survey with payload:', payload);
-
+      console.log('Token being sent:', token);
+      
       const response = await fetch('http://localhost:5000/api/survey', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          userId: userId,
+          answers: {
+            ...answers,
+            workout: answers.workout || 'beginner',
+            liftingFrequency: answers.liftingFrequency || '3',
+            cardioFrequency: answers.cardioFrequency || '2',
+            workoutDuration: answers.workoutDuration || '30'
+          }
+        })
       });
 
-      if (response.ok) {
-        console.log('Survey submitted successfully');
-        onComplete();
-      } else {
-        const errorData = await response.json();
-        console.error('Failed to submit survey:', errorData);
-        throw new Error(errorData.message || 'Failed to submit survey');
+      const data = await response.json();
+      console.log('Survey submission response:', data);
+
+      if (!response.ok) {
+        if (data.message === 'Invalid token') {
+          // Handle token expiration
+          console.error('Token validation failed:', data);
+          throw new Error('Your session has expired. Please log in again.');
+        }
+        throw new Error(data.message || 'Failed to submit survey');
+      }
+
+      if (onComplete) {
+        await onComplete();
       }
     } catch (error) {
       console.error('Error submitting survey:', error);
+      setError(error.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
