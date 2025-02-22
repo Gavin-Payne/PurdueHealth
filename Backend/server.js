@@ -22,6 +22,10 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
+app.get('/', (req, res) => {
+    res.redirect('/api/auth');
+});
+
 // Routes (only import after confirming files exist)
 const authRoutes = require('./routes/authentication');
 const userRoutes = require('./routes/userdata');
