@@ -3,7 +3,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import SignIn from './googleSignIn';
 import Survey from './Survey';
 import './App.css';
-import { jwtDecode } from 'jwt-decode';
+import jwtDecode from 'jwt-decode';
 import Profile from './Profile';
 import Settings from './Settings';
 
@@ -35,12 +35,12 @@ function App() {
 
   const handleLoginSuccess = async (response) => {
     console.log('Full login response:', response);
-    
+
     if (!response || !response.token) {
       console.error('Invalid response from login');
       return;
     }
-  
+
     try {
       const user = {
         ...response.user,
@@ -55,7 +55,7 @@ function App() {
 
       console.log('Token set to:', response.token);
       console.log('Setting user info:', user);
-      
+
     } catch (error) {
       console.error('Error in handleLoginSuccess:', error);
       handleLoginFailure(error);
@@ -93,9 +93,9 @@ function App() {
 
       const data = await response.json();
       console.log('Survey status response:', data);
-      
+
       setNeedsSurvey(!data.hasTakenSurvey);
-      
+
     } catch (error) {
       console.error('Error checking survey status:', error);
       // Default to showing survey if status check fails
@@ -121,10 +121,10 @@ function App() {
     setUserInfo(null);
     setToken(null);
     setMenuOpen(false);
-    
+
     // Clear local storage
     localStorage.removeItem('token');
-    
+
     console.log('User logged out');
   };
 
@@ -134,61 +134,60 @@ function App() {
   };
 
   return (
-    <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}>
-      <div className="app-container">
-        {!isLoggedIn ? (
-          <div className="login-container">
-            <h2>Welcome! Please sign in</h2>
-            <SignIn 
-              setToken={setToken}
-              onSuccess={handleLoginSuccess}
-              onError={handleLoginFailure}
-            />
-          </div>
-        ) : needsSurvey ? (
-          <Survey 
-            userId={userInfo?.id || userInfo?.sub}  // Try both possible locations
-            token={token}
-            onComplete={handleSurveyComplete} 
-          />
-        ) : (
-          <div className="app-main">
-            <header className="main-header">
-              <div className="menu-icon" onClick={toggleMenu}>
-                <span className="bar"></span>
-                <span className="bar"></span>
-                <span className="bar"></span>
+      <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}>
+        <div className="app-container">
+          {!isLoggedIn ? (
+              <div className="login-container">
+                <h2>Welcome! Please sign in</h2>
+                <SignIn
+                    setToken={setToken}
+                    onSuccess={handleLoginSuccess}
+                    onError={handleLoginFailure}
+                />
               </div>
-              <div className="header-title">BoilerFit</div>
-            </header>
-            {menuOpen && (
-              <nav className="side-menu">
-                <ul>
-                  <li onClick={() => { setActiveView('home'); closeMenu(); }}>Home</li>
-                  <li onClick={() => { setActiveView('profile'); closeMenu(); }}>Profile</li>
-                  <li onClick={() => { setActiveView('settings'); closeMenu(); }}>Settings</li>
-                  <li onClick={handleLogout}>Log Out</li>
-                </ul>
-              </nav>
-            )}
-            <main className="main-content">
-              {activeView === 'profile' ? (
-                <Profile userId={userInfo.id} token={token} />
-              ) : activeView === 'settings' ? (
-                <Settings isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
-              ) : (
-                <div className="home-content">
-                  <h2>Welcome to BoilerFit</h2>
-                  <p>Your personalized fitness and nutrition companion.</p>
-                </div>
-              )}
-            </main>
-          </div>
-        )}
-      </div>
-    </GoogleOAuthProvider>
+          ) : needsSurvey ? (
+              <Survey
+                  userId={userInfo?.id || userInfo?.sub}  // Try both possible locations
+                  token={token}
+                  onComplete={handleSurveyComplete}
+              />
+          ) : (
+              <div className="app-main">
+                <header className="main-header">
+                  <div className="menu-icon" onClick={toggleMenu}>
+                    <span className="bar"></span>
+                    <span className="bar"></span>
+                    <span className="bar"></span>
+                  </div>
+                  <div className="header-title">BoilerFit</div>
+                </header>
+                {menuOpen && (
+                    <nav className="side-menu">
+                      <ul>
+                        <li onClick={() => { setActiveView('home'); closeMenu(); }}>Home</li>
+                        <li onClick={() => { setActiveView('profile'); closeMenu(); }}>Profile</li>
+                        <li onClick={() => { setActiveView('settings'); closeMenu(); }}>Settings</li>
+                        <li onClick={handleLogout}>Log Out</li>
+                      </ul>
+                    </nav>
+                )}
+                <main className="main-content">
+                  {activeView === 'profile' ? (
+                      <Profile userId={userInfo.id} token={token} />
+                  ) : activeView === 'settings' ? (
+                      <Settings isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
+                  ) : (
+                      <div className="home-content">
+                        <h2>Welcome to BoilerFit</h2>
+                        <p>Your personalized fitness and nutrition companion.</p>
+                      </div>
+                  )}
+                </main>
+              </div>
+          )}
+        </div>
+      </GoogleOAuthProvider>
   );
 }
 
 export default App;
-
