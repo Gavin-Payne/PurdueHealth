@@ -1,21 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const Survey = require('../models/Survey');
-const jwt = require('jsonwebtoken');
+const { auth } = require('express-oauth2-jwt-bearer');
 
-// Authentication middleware
-const authenticateToken = (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-  if (!token) return res.status(401).json({ message: 'Access denied' });
-
-  try {
-    const verified = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = verified;
-    next();
-  } catch (err) {
-    res.status(400).json({ message: 'Invalid token' });
-  }
-};
+// Authentication middleware using Auth0
+const authenticateToken = auth({
+  audience: process.env.AUTH0_AUDIENCE,
+  issuerBaseURL: `https://${process.env.AUTH0_DOMAIN}/`,
+});
 
 // Check if user has completed survey
 router.get('/status/:userId', authenticateToken, async (req, res) => {

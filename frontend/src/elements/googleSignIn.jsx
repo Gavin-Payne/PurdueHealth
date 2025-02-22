@@ -1,211 +1,70 @@
 import React, { useState } from 'react';
-import { GoogleLogin } from '@react-oauth/google';
-import { jwtDecode } from 'jwt-decode';
-
-// Define the signin function
-const signin = async (username, password) => {
-  const response = await fetch('http://localhost:5000/api/auth/login', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ username, password })
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to sign in');
-  }
-
-  return response.json();
-};
+import { useAuth0 } from '@auth0/auth0-react';
 
 const SignIn = ({ setToken, onSuccess, onError }) => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const { loginWithRedirect, isAuthenticated, user, getIdTokenClaims } = useAuth0();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showUsernameInput, setShowUsernameInput] = useState(false);
-  const [googleCredential, setGoogleCredential] = useState(null);
-  const [newUsername, setNewUsername] = useState('');
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!username.trim() || !password.trim()) {
-      setError('Both username and password are required!');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
+  const handleAuth0Login = async () => {
     try {
-      const response = await signin(username, password);
-      setToken(response.token);
-      localStorage.setItem('token', response.token);
-      onSuccess(response);
+      await loginWithRedirect();
     } catch (err) {
-      if (err.response && err.response.data && err.response.data.message) {
-        setError(err.response.data.message);
-      } else {
-        setError('Incorrect Username or Password');
-      }
+      console.error('Auth0 login error:', err);
+      setError('Failed to authenticate with Auth0');
       onError(err);
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse) => {
-    setLoading(true);
+  const handleContinue = async () => {
     try {
-      const decoded = jwtDecode(credentialResponse.credential);
-      console.log('Google Sign In success', decoded);
-      
-      // First, check if this Google account already exists
-      const checkRes = await fetch('http://localhost:5000/api/google/check', {
+      const claims = await getIdTokenClaims();
+      const token = claims.__raw;
+      setToken(token);
+      localStorage.setItem('token', token);
+
+      // Send the token to the backend
+      const response = await fetch('http://localhost:5000/api/auth0/signin', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          email: decoded.email
-        })
-      });
-      
-      const checkData = await checkRes.json();
-      
-      if (checkData.exists) {
-        // User exists, proceed with normal sign in
-        const res = await fetch('http://localhost:5000/api/google/signin', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ 
-            credential: credentialResponse.credential,
-          })
-        });
-        
-        const data = await res.json();
-        if (data.token) {
-          setToken(data.token);
-          localStorage.setItem('token', data.token);
-          onSuccess(data);
-        } else {
-          throw new Error('No token received');
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         }
-      } else {
-        // New user, show username input
-        setGoogleCredential(credentialResponse.credential);
-        setShowUsernameInput(true);
-      }
-    } catch (err) {
-      console.error('Google Sign In error:', err);
-      setError('Failed to authenticate with Google');
-      onError(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUsernameSubmit = async (e) => {
-    e.preventDefault();
-    if (!newUsername.trim()) {
-      setError('Username is required');
-      return;
-    }
-    
-    setLoading(true);
-    try {
-      const res = await fetch('http://localhost:5000/api/google/signin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          credential: googleCredential,
-          username: newUsername
-        })
       });
-      
-      const data = await res.json();
-      if (data.error === 'username_taken') {
-        setError('Username is already taken');
-        return;
-      }
-      
-      if (data.token) {
-        setToken(data.token);
-        localStorage.setItem('token', data.token);
+
+      const data = await response.json();
+      if (response.ok) {
         onSuccess(data);
       } else {
-        throw new Error('No token received');
+        throw new Error(data.message || 'Failed to sign in');
       }
     } catch (err) {
-      console.error('Username submission error:', err);
-      setError('Failed to create account');
+      console.error('Continue error:', err);
+      setError('Failed to continue');
       onError(err);
-    } finally {
-      setLoading(false);
     }
   };
 
-  if (showUsernameInput) {
+  if (isAuthenticated) {
     return (
       <div style={containerStyle}>
-        <form onSubmit={handleUsernameSubmit} style={formStyle}>
-          <h2 style={headerStyle}>Choose Your Username</h2>
-          {error && <p style={errorStyle}>{error}</p>}
-          <input
-            type="text"
-            placeholder="Enter username"
-            value={newUsername}
-            onChange={(e) => setNewUsername(e.target.value)}
-            style={inputStyle}
-          />
-          <button type="submit" style={buttonStyle} disabled={loading}>
-            {loading ? 'Creating Account...' : 'Create Account'}
-          </button>
-        </form>
+        <p>Welcome, {user.name}</p>
+        <button onClick={handleContinue}>
+          Continue
+        </button>
       </div>
     );
   }
 
   return (
     <div style={containerStyle}>
-      <form onSubmit={handleSubmit} style={formStyle}>
+      <div style={formStyle}>
         <h2 style={headerStyle}>Sign In</h2>
         {error && <p style={errorStyle}>{error}</p>}
-        <input
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          style={inputStyle}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={inputStyle}
-        />
-        <button type="submit" style={buttonStyle} disabled={loading}>
-          {loading ? 'Signing in...' : 'Sign In'}
+        <button onClick={handleAuth0Login} style={buttonStyle} disabled={loading}>
+          {loading ? 'Signing in...' : 'Sign In with Auth0'}
         </button>
-        
-        {/* New Google Sign-In Button */}
-        <div style={{ marginTop: '15px', textAlign: 'center' }}>
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={() => {
-              console.error('Login Failed');
-              setError('Google Sign In failed. Please try again.');
-              onError(new Error('Google Sign In failed'));
-            }}
-            useOneTap
-          />
-        </div>
-      </form>
+      </div>
     </div>
   );
 };
@@ -236,15 +95,6 @@ const headerStyle = {
   color: '#000000', // Black text on gold background
   marginBottom: '10px',
   fontWeight: 'bold',
-};
-
-const inputStyle = {
-  padding: '10px',
-  border: '2px solid #000000',
-  borderRadius: '5px',
-  fontSize: '1em',
-  backgroundColor: '#FFFFFF',
-  color: '#000000',
 };
 
 const buttonStyle = {
