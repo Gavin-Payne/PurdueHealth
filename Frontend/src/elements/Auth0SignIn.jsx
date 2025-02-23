@@ -34,37 +34,44 @@ const Auth0SignIn = () => {
     }
   };
 
-  // Fetch data from API after login
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = await getAccessTokenSilently(); // Get the Auth0 token
+  const fetchData = async () => {
+    try {
+      let token;
 
-        // Fetch data from your API
+      // Try to get the token silently
+      try {
+        token = await getAccessTokenSilently();
+      } catch (error) {
+        console.log('Silent token fetch failed, using popup...');
+        handleLogin()
+      }
+
+      // Log the token to ensure it was retrieved
+      console.log("Access Token:", token);
+
+      // Proceed with the API request if token is valid
+      if (token) {
         const response = await fetch('https://boilerfit.me/api/some-endpoint', {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${token}`, // Send the token
+            'Authorization': `Bearer ${token}`,
           },
           credentials: 'include',  // Send cookies with the request if needed
         });
 
         if (!response.ok) {
           throw new Error('Authentication failed or data fetching error');
+          token = getAccessTokenWithPopup();
         }
 
         const data = await response.json();
         setApiData(data); // Set the fetched data
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        setLoginError(error.message);
       }
-    };
-
-    if (isAuthenticated) {
-      fetchData(); // Fetch data once the user is authenticated
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setLoginError(error.message);
     }
-  }, [isAuthenticated, getAccessTokenSilently]); // Re-run when authentication state changes
+  };
 
   if (isLoading) {
     return <div className="auth0-loading">Loading...</div>;
