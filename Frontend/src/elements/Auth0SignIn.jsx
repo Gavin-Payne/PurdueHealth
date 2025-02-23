@@ -34,6 +34,7 @@ const Auth0SignIn = () => {
     }
   };
 
+  // Fetch data from API
   const fetchData = async () => {
     try {
       let token;
@@ -42,16 +43,16 @@ const Auth0SignIn = () => {
       try {
         token = await getAccessTokenSilently();
       } catch (error) {
-        console.log('Silent token fetch failed, using popup...');
-        handleLogin()
+        console.log('Silent token fetch failed, trying login...');
+        setLoginError('Please log in to fetch data');
+        return; // Early return to prevent further API calls
       }
 
       // Log the token to ensure it was retrieved
       console.log("Access Token:", token);
 
-      // Proceed with the API request if token is valid
       if (token) {
-        const response = await fetch(`${API_BASE_URL}/api/health`, {
+        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/health`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -62,7 +63,6 @@ const Auth0SignIn = () => {
 
         if (!response.ok) {
           throw new Error('Authentication failed or data fetching error');
-          handleLogin()
         }
 
         const data = await response.json();
@@ -73,6 +73,13 @@ const Auth0SignIn = () => {
       setLoginError(error.message);
     }
   };
+
+  // Trigger fetchData after successful authentication
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchData();
+    }
+  }, [isAuthenticated]);
 
   if (isLoading) {
     return <div className="auth0-loading">Loading...</div>;
@@ -101,10 +108,7 @@ const Auth0SignIn = () => {
               <img src={user.picture} alt={user.name} />
               <h2>{user.name}</h2>
               <p>{user.email}</p>
-              <button
-                  onClick={handleLogout}
-                  className="auth0-button logout"
-              >
+              <button onClick={handleLogout} className="auth0-button logout">
                 Log Out
               </button>
 
