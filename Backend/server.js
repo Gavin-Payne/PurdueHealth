@@ -98,8 +98,17 @@ const connectDB = async () => {
   }
 };
 
-startServer();
-
+const startServer = async () => {
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error.message);
+    console.error(error.stack);  // This will show the stack trace
+  }
+};
 // Gracefully shut down
 process.on('SIGINT', async () => {
   try {
