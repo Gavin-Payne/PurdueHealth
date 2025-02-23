@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { connectDB, closeConnection } = require('./src/utils/db');
 require('dotenv').config();
 
@@ -35,8 +36,12 @@ app.use((req, res, next) => {
   next();
 });
 
+// Serve static files (like React build)
+app.use(express.static(path.join(__dirname, 'build'))); // Adjust this if your build directory is located elsewhere
+
+// Root route: Send the frontend index.html (from the build folder)
 app.get('/', (req, res) => {
-  res.send('Welcome to BoilerFit!');
+  res.sendFile(path.join(__dirname, 'build', 'index.html')); // Adjust if the build folder is at a different location
 });
 
 // Health check route
@@ -50,8 +55,8 @@ const workoutPlanRoutes = require('./src/routes/workoutPlan');
 const authenticationRoutes = require('./src/routes/authentication');
 const dietaryRoutes = require('./src/routes/dietary');
 
-// Register routes
-app.use('/api/survey', surveyRoutes); // Make sure this is registered
+// Register API routes
+app.use('/api/survey', surveyRoutes);
 app.use('/api/workout-plan', workoutPlanRoutes);
 app.use('/api/auth', authenticationRoutes);
 app.use('/api/dietary', dietaryRoutes);
@@ -76,7 +81,7 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-// 404 handler
+// 404 handler for undefined routes
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
@@ -95,6 +100,7 @@ const startServer = async () => {
 
 startServer();
 
+// Gracefully shut down
 process.on('SIGINT', async () => {
   try {
     await closeConnection();
