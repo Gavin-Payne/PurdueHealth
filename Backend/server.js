@@ -87,14 +87,14 @@ app.use((req, res) => {
 });
 
 // Initialize MongoDB connection before starting server
-const startServer = async () => {
+const connectDB = async () => {
   try {
-    await connectDB();
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-    });
+    // Attempt to connect to MongoDB
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log('MongoDB connected successfully');
   } catch (error) {
-    console.error('Failed to start server:', error);
+    console.error('MongoDB connection error:', error);
+    throw error;  // Rethrow to be caught in the startServer function
   }
 };
 
