@@ -22,6 +22,7 @@ const App = () => {
   const [token, setToken] = useState(null);
   const [error, setError] = useState(null);
   const [surveyData, setSurveyData] = useState(null);
+  const API_URL = "https://purdue-health-mz7ut.ondigitalocean.app/";
 
   useEffect(() => {
     let isMounted = true;
@@ -38,7 +39,7 @@ const App = () => {
         });
 
         // Sync user with database
-        const syncResponse = await fetch('http://localhost:5000/api/auth/auth0/sync', {
+        const syncResponse = await fetch(API_URL, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -101,7 +102,7 @@ const App = () => {
 
       console.log('Checking survey status with:', { userId, tokenPresent: !!currentToken });
       
-      const response = await fetch(`http://localhost:5000/api/survey/status/${userId}`, {
+      const response = await fetch(API_URL, {
         headers: {
           'Authorization': `Bearer ${currentToken}`,
           'Content-Type': 'application/json'
@@ -129,7 +130,7 @@ const App = () => {
       setNeedsSurvey(false);
       if (user?.email) {
         try {
-          const surveyResponse = await fetch(`http://localhost:5000/api/survey/status/${user.email}`, {
+          const surveyResponse = await fetch(API_URL, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
@@ -157,7 +158,7 @@ const App = () => {
 
   const generateWorkoutPlan = async (userId) => {
     try {
-        const surveyCheckResponse = await fetch(`http://localhost:5000/api/survey/status/${userId}`, {
+        const surveyCheckResponse = await fetch(API_URL, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -169,7 +170,7 @@ const App = () => {
             throw new Error('Please complete the survey first');
         }
 
-        const response = await fetch(`http://localhost:5000/api/workout-plan/${userId}`, {
+        const response = await fetch(API_URL, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -203,7 +204,7 @@ const App = () => {
     if (!token || !user?.email) return;
     
     try {
-      const response = await fetch(`http://localhost:5000/api/survey/data/${user.email}`, {
+      const response = await fetch(API_URL, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

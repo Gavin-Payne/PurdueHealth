@@ -9,13 +9,13 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 // Enable CORS before any route definitions
 app.use(cors({
-  origin: 'http://localhost:3000',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  origin: 'https://purdue-health-mz7ut.ondigitalocean.app/purduehealth-frontend', // Allow requests from your frontend
+  credentials: true, // Allow credentials (cookies, authorization headers)
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // Allowed HTTP methods
   allowedHeaders: [
-    'Content-Type', 
+    'Content-Type',
     'Authorization',
-    'X-User-Email'
+    'X-User-Email' // Custom headers you want to allow
   ]
 }));
 
