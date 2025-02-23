@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://purdue-health-mz7ut.ondigitalocean.app/';
+const API_BASE_URL = 'https://purdue-health-mz7ut.ondigitalocean.app';
 
 export const signin = async (username, password) => {
     try {
