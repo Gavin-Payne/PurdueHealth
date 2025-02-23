@@ -1,21 +1,13 @@
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
-
-// Serve static files from the React build folder
-app.use(express.static(path.join(__dirname, 'build')));
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
-});
-// const { connectDB, closeConnection } = require('./src/utils/db');
+const path = require('path');  // <-- Make sure this is required
+const { connectDB, closeConnection } = require('./src/utils/db');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-// Enable CORS before any route definitions
 const allowedOrigins = [
   'https://localhost:3000',
   'https://boilerfit.me'
@@ -36,6 +28,9 @@ app.use(cors({
 
 app.use(express.json());
 
+// Serve static files from the React build folder
+app.use(express.static(path.join(__dirname, 'build')));
+
 // Set headers to allow cross-origin communication
 app.use((req, res, next) => {
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
@@ -43,12 +38,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve static files (like React build)
-app.use(express.static(path.join(__dirname, 'build'))); // Adjust this if your build directory is located elsewhere
-
-// Root route: Send the frontend index.html (from the build folder)
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build', 'index.html')); // Adjust if the build folder is at a different location
+  res.send('Welcome to BoilerFit!');
 });
 
 // Health check route
@@ -62,7 +53,7 @@ const workoutPlanRoutes = require('./src/routes/workoutPlan');
 const authenticationRoutes = require('./src/routes/authentication');
 const dietaryRoutes = require('./src/routes/dietary');
 
-// Register API routes
+// Register routes
 app.use('/api/survey', surveyRoutes);
 app.use('/api/workout-plan', workoutPlanRoutes);
 app.use('/api/auth', authenticationRoutes);
@@ -70,6 +61,11 @@ app.use('/api/dietary', dietaryRoutes);
 
 const menuRoutes = require('./src/routes/menu');
 app.use('/api/menu', menuRoutes);
+
+// Catch-all route to serve the React app for any route that doesn't match the API
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
 
 // Global error handler
 app.use((err, req, res, next) => {
@@ -88,23 +84,12 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-// 404 handler for undefined routes
+// 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
 // Initialize MongoDB connection before starting server
-const connectDB = async () => {
-  try {
-    // Attempt to connect to MongoDB
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log('MongoDB connected successfully');
-  } catch (error) {
-    console.error('MongoDB connection error:', error);
-    throw error;  // Rethrow to be caught in the startServer function
-  }
-};
-
 const startServer = async () => {
   try {
     await connectDB();
@@ -112,11 +97,12 @@ const startServer = async () => {
       console.log(`Server is running on port ${PORT}`);
     });
   } catch (error) {
-    console.error('Failed to start server:', error.message);
-    console.error(error.stack);  // This will show the stack trace
+    console.error('Failed to start server:', error);
   }
 };
-// Gracefully shut down
+
+startServer();
+
 process.on('SIGINT', async () => {
   try {
     await closeConnection();
