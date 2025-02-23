@@ -22,7 +22,7 @@ const App = () => {
   const [token, setToken] = useState(null);
   const [error, setError] = useState(null);
   const [surveyData, setSurveyData] = useState(null);
-  const API_URL = "https://purdue-health-mz7ut.ondigitalocean.app/";
+  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3000";
 
   useEffect(() => {
     let isMounted = true;

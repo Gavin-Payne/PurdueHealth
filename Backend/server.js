@@ -8,15 +8,21 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 // Enable CORS before any route definitions
+const allowedOrigins = [
+  'https://localhost:3000'
+];
+
 app.use(cors({
-  origin: 'https://purdue-health-mz7ut.ondigitalocean.app', // Allow requests from your frontend
-  credentials: true, // Allow credentials (cookies, authorization headers)
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // Allowed HTTP methods
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'X-User-Email' // Custom headers you want to allow
-  ]
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-User-Email']
 }));
 
 app.use(express.json());
@@ -71,17 +77,20 @@ app.use((req, res) => {
 });
 
 // Initialize MongoDB connection before starting server
-const startServer = async () => {
+const connectDB = async () => {
   try {
-    await connectDB(); // Establish initial connection
-    console.log('MongoDB connection initialized');
-    
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+    await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000,
+      retryWrites: true,
+      retryReads: true
     });
+    console.log('MongoDB connected');
   } catch (error) {
-    console.error('Failed to initialize server:', error);
-    process.exit(1);
+    console.error('MongoDB connection error:', error);
+    // Retry connection after delay
+    setTimeout(connectDB, 5000);
   }
 };
 
