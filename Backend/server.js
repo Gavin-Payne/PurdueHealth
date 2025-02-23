@@ -8,7 +8,7 @@ app.use(express.static(path.join(__dirname, 'build')));
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
-const { connectDB, closeConnection } = require('./src/utils/db');
+// const { connectDB, closeConnection } = require('./src/utils/db');
 require('dotenv').config();
 
 const app = express();
