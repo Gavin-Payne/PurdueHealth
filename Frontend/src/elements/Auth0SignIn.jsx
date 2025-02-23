@@ -61,7 +61,7 @@ const Auth0SignIn = () => {
 
         if (!response.ok) {
           throw new Error('Authentication failed or data fetching error');
-          token = getAccessTokenWithPopup();
+          handleLogin()
         }
 
         const data = await response.json();
