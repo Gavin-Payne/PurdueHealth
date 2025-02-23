@@ -51,12 +51,13 @@ const Auth0SignIn = () => {
 
       // Proceed with the API request if token is valid
       if (token) {
-        const response = await fetch('https://boilerfit.me/api/some-endpoint', {
+        const response = await fetch(`${API_BASE_URL}/api/health`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           },
-          credentials: 'include',  // Send cookies with the request if needed
+          credentials: 'include'
         });
 
         if (!response.ok) {
