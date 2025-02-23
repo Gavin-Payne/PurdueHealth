@@ -1,6 +1,13 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+
+// Serve static files from the React build folder
+app.use(express.static(path.join(__dirname, 'build')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
 const { connectDB, closeConnection } = require('./src/utils/db');
 require('dotenv').config();
 
