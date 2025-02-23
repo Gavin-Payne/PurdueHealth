@@ -35,6 +35,10 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get('/', (req, res) => {
+  res.send('Welcome to BoilerFit!');
+});
+
 // Health check route
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
