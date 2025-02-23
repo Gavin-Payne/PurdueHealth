@@ -1,10 +1,10 @@
 const express = require('express');
 const cors = require('cors');
-const { connectDB, closeConnection } = require('./utils/db');
+const { connectDB, closeConnection } = require('./src/utils/db');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 // Enable CORS before any route definitions
@@ -34,10 +34,10 @@ app.get('/health', (req, res) => {
 });
 
 // Import all routes
-const surveyRoutes = require('./routes/survey');
-const workoutPlanRoutes = require('./routes/workoutPlan');
-const authenticationRoutes = require('./routes/authentication');
-const dietaryRoutes = require('./routes/dietary');
+const surveyRoutes = require('./src/routes/survey');
+const workoutPlanRoutes = require('./src/routes/workoutPlan');
+const authenticationRoutes = require('./src/routes/authentication');
+const dietaryRoutes = require('./src/routes/dietary');
 
 // Register routes
 app.use('/api/survey', surveyRoutes); // Make sure this is registered
@@ -45,7 +45,7 @@ app.use('/api/workout-plan', workoutPlanRoutes);
 app.use('/api/auth', authenticationRoutes);
 app.use('/api/dietary', dietaryRoutes);
 
-const menuRoutes = require('./routes/menu'); 
+const menuRoutes = require('./src/routes/menu');
 app.use('/api/menu', menuRoutes);
 
 // Global error handler

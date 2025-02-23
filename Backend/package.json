@@ -11,6 +11,7 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.7.9",
     "bcrypt": "^5.1.1",
+    "concurrently": "^9.1.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
@@ -25,14 +26,15 @@
     "node-fetch": "^2.7.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-markdown": "^10.0.0",
     "react-scripts": "^5.0.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "concurrently \"npm run backend\" \"npm run frontend\"",
-    "backend": "cd Backend && node server.js",
-    "frontend": "npm start --prefix ./Frontend"
+    "start": "../node_modules/.bin/concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "cd  && node server.js",
+    "frontend": "npm start --prefix ../Frontend"
   },
   "eslintConfig": {
     "extends": [
