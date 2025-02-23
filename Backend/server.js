@@ -9,7 +9,8 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 // Enable CORS before any route definitions
 const allowedOrigins = [
-  'https://localhost:3000'
+  'https://localhost:3000',
+  'https://boilerfit.me'
 ];
 
 app.use(cors({
